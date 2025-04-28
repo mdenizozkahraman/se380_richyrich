@@ -7,8 +7,28 @@ class MarketScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Market'),
+        title: const Text(
+          'Market',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.blue[900]!,
+                Colors.blue[800]!,
+              ],
+            ),
+          ),
+        ),
       ),
       body: const Center(
         child: Text('Market Screen'),
