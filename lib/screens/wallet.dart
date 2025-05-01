@@ -1,5 +1,22 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+
+
+class Asset{
+  final String currency;
+  final double amount;
+  final double averagePrice;
+
+  Asset({
+    required this.currency,
+    required this.amount,
+    required this.averagePrice
+  });
+
+  double get totalValue => amount * averagePrice;
+}
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -9,6 +26,80 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
+
+  final List<Asset> _assets = [];
+
+  void _showAddAssetDialog(BuildContext context, String currency){
+    final TextEditingController amountController = TextEditingController();
+    final TextEditingController priceController = TextEditingController();
+
+    showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text("Add $currency"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: amountController,
+                decoration: const InputDecoration(
+                  labelText: "Amount",
+                  hintText: "Enter amount"
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: priceController,
+                decoration: const InputDecoration(
+                    labelText: "Average Purchase Price",
+                    hintText: "Enter average price"
+              ),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () {
+                  if (amountController.text.isNotEmpty && priceController.text.isNotEmpty) {
+                    setState(() {
+                      final newAmount = double.parse(amountController.text);
+                      final newPrice = double.parse(priceController.text);
+                      final existingAssetIndex = _assets.indexWhere( (asset) => asset.currency == currency);
+
+                      if (existingAssetIndex != -1){
+                        final existingAsset = _assets[existingAssetIndex];
+                        final totalAmount = existingAsset.amount + newAmount;
+                        final weightedAveragePrice = ((existingAsset.amount * existingAsset.averagePrice) + (newAmount * newPrice)) / totalAmount;
+
+                        _assets[existingAssetIndex] = Asset(
+                            currency: currency,
+                            amount: totalAmount,
+                            averagePrice: weightedAveragePrice
+                        );
+                      }
+                      else{
+                        _assets.add(Asset(
+                            currency: currency,
+                            amount: newAmount,
+                            averagePrice: newPrice)
+                        );
+                      }
+                    });
+                    Navigator.pop(context);
+                  }
+                },
+                child: Text("Add",
+                style: TextStyle(color: Colors.blue[500]),)
+            ),
+          ],
+        ),
+    );
+
+
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,9 +134,9 @@ class _WalletScreenState extends State<WalletScreen> {
                     style: TextStyle(fontSize: 20, color: Colors.grey),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    '\$0,00',
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                  Text(
+                    '\$${_assets.fold(0.0, (sum, asset) => sum + asset.totalValue).toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -95,10 +186,7 @@ class _WalletScreenState extends State<WalletScreen> {
                   'Assets',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-                IconButton(
-                  onPressed: () {
-                    // Will open dialog for adding new asset
-                  },
+                PopupMenuButton(
                   icon: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -107,6 +195,25 @@ class _WalletScreenState extends State<WalletScreen> {
                     ),
                     child: const Icon(Icons.add, color: Colors.white),
                   ),
+                  onSelected: (value) => _showAddAssetDialog(context, value),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: "USD",
+                      child: Text("USD"),
+                    ),
+                    const PopupMenuItem(
+                      value: "EUR",
+                      child: Text("EUR"),
+                    ),
+                    const PopupMenuItem(
+                      value: "XAU",
+                      child: Text("XAU"),
+                    ),
+                    const PopupMenuItem(
+                      value: "BTC",
+                      child: Text("BTC"),
+                    ),
+                  ] ,
                 ),
               ],
             ),
@@ -114,12 +221,68 @@ class _WalletScreenState extends State<WalletScreen> {
 
           Expanded(
             child: ListView.builder(
-              itemCount: 0, // Empty for now
+              itemCount: _assets.length,
               itemBuilder: (context, index) {
-                return const ListTile(
-                  title: Text('Stock'),
-                  subtitle: Text('Amount: 0'),
-                  trailing: Text('\$0.00'),
+                final asset = _assets[index];
+                return Dismissible(
+                  key: Key(asset.currency + index.toString()),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    color: Colors.red,
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.only(left: 20),
+                    child: const Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                    ),
+                  ),
+                  confirmDismiss: (direction) async {
+                    return await showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text("Delete Asset"),
+                        content: Text("Are you sure you want to delete ${asset.currency}?"),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text("No"),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: const Text("Yes"),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  onDismissed: (direction) {
+                    setState(() {
+                      _assets.removeAt(index);
+                    });
+                  },
+                  child: Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: ListTile(
+                      title: Text(
+                        asset.currency,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Amount: ${asset.amount}'),
+                          Text('Average Price: \$${asset.averagePrice.toStringAsFixed(2)}'),
+                        ],
+                      ),
+                      trailing: Text(
+                        '\$${asset.totalValue.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
                 );
               },
             ),
@@ -129,3 +292,6 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 }
+
+
+
