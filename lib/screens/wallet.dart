@@ -29,6 +29,21 @@ class _WalletScreenState extends State<WalletScreen> {
 
   final List<Asset> _assets = [];
 
+  Color _getColorForCurrency(String currency){
+    switch (currency){
+      case "USD":
+        return Colors.green;
+      case "EUR":
+        return Colors.blue;
+      case "XAU":
+        return Colors.orange;
+      case "BTC":
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
   void _showAddAssetDialog(BuildContext context, String currency){
     final TextEditingController amountController = TextEditingController();
     final TextEditingController priceController = TextEditingController();
@@ -100,6 +115,64 @@ class _WalletScreenState extends State<WalletScreen> {
 
   }
 
+  void _showEditAssetDialog(BuildContext context, Asset asset, int index){
+    final TextEditingController amountController = TextEditingController(text: asset.amount.toString());
+    final TextEditingController priceController = TextEditingController(text: asset.averagePrice.toString());
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Edit ${asset.currency}"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: amountController,
+              decoration: const InputDecoration(
+                  labelText: "Amount",
+                  hintText: "Enter amount"
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: priceController,
+              decoration: const InputDecoration(
+                  labelText: "Average Purchase Price",
+                  hintText: "Enter average price"
+              ),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel")
+          ),
+          TextButton(
+              onPressed: () {
+                if (amountController.text.isNotEmpty && priceController.text.isNotEmpty) {
+                  setState(() {
+                    _assets[index] = Asset(
+                      currency: asset.currency,
+                      amount: double.parse(amountController.text),
+                      averagePrice: double.parse(priceController.text),
+                    );
+                  });
+                  Navigator.pop(context);
+                }
+              },
+              child: Text(
+                "Save",
+                style: TextStyle(color: Colors.blue[500]),
+              )
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -150,28 +223,23 @@ class _WalletScreenState extends State<WalletScreen> {
                 padding: const EdgeInsets.all(16),
                 child: PieChart(
                   PieChartData(
-                    sections: [
+                    sections: _assets.isEmpty ? [
                       PieChartSectionData(
-                        value: 40,
-                        title: '40%',
-                        color: Colors.blue[400],
+                        value: 100,
+                        title: '100%',
+                        color: Colors.grey[400],
                         radius: 100,
                       ),
-                      PieChartSectionData(
-                        value: 30,
-                        title: '30%',
-                        color: Colors.green[400],
+                    ] : _assets.map((asset) {
+                      final totalValue = _assets.fold(0.0, (sum, a) => sum + a.totalValue);
+                      final percentage = (asset.totalValue / totalValue) * 100;
+                      return PieChartSectionData(
+                        value: percentage,
+                        title: '${percentage.toStringAsFixed(1)}%',
+                        color: _getColorForCurrency(asset.currency),
                         radius: 100,
-                      ),
-                      PieChartSectionData(
-                        value: 30,
-                        title: '30%',
-                        color: Colors.orange[400],
-                        radius: 100,
-                      ),
-                    ],
-                    sectionsSpace: 2,
-                    centerSpaceRadius: 0,
+                      );
+                    }).toList(),
                   ),
                 ),
               ),
@@ -223,7 +291,8 @@ class _WalletScreenState extends State<WalletScreen> {
             child: ListView.builder(
               itemCount: _assets.length,
               itemBuilder: (context, index) {
-                final asset = _assets[index];
+                final sortedAssets = List<Asset>.from(_assets)..sort((a, b) => b.totalValue.compareTo(a.totalValue));
+                final asset = sortedAssets[index];
                 return Dismissible(
                   key: Key(asset.currency + index.toString()),
                   direction: DismissDirection.endToStart,
@@ -262,23 +331,42 @@ class _WalletScreenState extends State<WalletScreen> {
                   },
                   child: Card(
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: ListTile(
-                      title: Text(
-                        asset.currency,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Amount: ${asset.amount}'),
-                          Text('Average Price: \$${asset.averagePrice.toStringAsFixed(2)}'),
-                        ],
-                      ),
-                      trailing: Text(
-                        '\$${asset.totalValue.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                    child: InkWell(
+                      onTap: () {
+                        final originalIndex = _assets.indexWhere((a) => a.currency == asset.currency);
+                        _showEditAssetDialog(context, asset, originalIndex);
+                      },
+                      child: ListTile(
+                        title: Row(
+                          children: [
+                            Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: _getColorForCurrency(asset.currency),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              asset.currency,
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Amount: ${asset.amount}'),
+                            Text('Average Price: \$${asset.averagePrice.toStringAsFixed(2)}'),
+                          ],
+                        ),
+                        trailing: Text(
+                          '\$${asset.totalValue.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
