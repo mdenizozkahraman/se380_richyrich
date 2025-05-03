@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/market.dart';
 import 'screens/wallet.dart';
+import 'screens/news.dart';
 
 void main() {
   runApp(const MyApp());
@@ -35,8 +36,10 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
+    const NewsScreen(),
     const MarketScreen(),
     const WalletScreen(),
+
   ];
 
   @override
@@ -66,6 +69,10 @@ class _MainScreenState extends State<MainScreen> {
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.white70,
         items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.newspaper),
+            label: 'News',
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.trending_up),
             label: 'Market',
