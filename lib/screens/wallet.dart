@@ -326,7 +326,10 @@ class _WalletScreenState extends State<WalletScreen> {
                   },
                   onDismissed: (direction) {
                     setState(() {
-                      _assets.removeAt(index);
+                      final originalIndex = _assets.indexWhere((a) => a.currency == asset.currency);
+                      if (originalIndex != -1) {
+                        _assets.removeAt(originalIndex);
+                      }
                     });
                   },
                   child: Card(

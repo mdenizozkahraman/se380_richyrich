@@ -10,12 +10,36 @@ class MarketScreen extends StatefulWidget{
 
   class _MarketScreenState extends State<MarketScreen>{
   Map<String, double> _prices = {};
+  Set<String> _favorites = {};
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
     loadPrices();
+  }
+
+  void _toggleFavorite(String pair){
+    setState(() {
+      if (_favorites.contains(pair)) {
+        _favorites.remove(pair);
+      }
+      else {
+        _favorites.add(pair);
+      }
+    });
+  }
+
+  List<MapEntry<String, double>> _getSortedPrices() {
+    final entries = _prices.entries.toList();
+    entries.sort((a, b) {
+      final aIsFavorite = _favorites.contains(a.key);
+      final bIsFavorite = _favorites.contains(b.key);
+      if (aIsFavorite && !bIsFavorite) return -1;
+      if (!aIsFavorite && bIsFavorite) return 1;
+      return a.key.compareTo(b.key);
+    });
+    return entries;
   }
 
   Future<void> loadPrices() async {
@@ -32,45 +56,16 @@ class MarketScreen extends StatefulWidget{
 
         setState(() {
           _prices = {
-            'BTC/TRY_1': data['bitcoin']['try'].toDouble(),
-            'ETH/TRY_1': data['ethereum']['try'].toDouble(),
-            'USDT/TRY_1': data['tether']['try'].toDouble(),
-            'USDC/TRY_1': data['usd-coin']['try'].toDouble(),
-            'BNB/TRY_1': data['binancecoin']['try'].toDouble(),
-            'ADA/TRY_1': data['cardano']['try'].toDouble(),
-            'DOGE/TRY_1': data['dogecoin']['try'].toDouble(),
-            'SOL/TRY_1': data['solana']['try'].toDouble(),
-            'LTC/TRY_1': data['litecoin']['try'].toDouble(),
+            'BTC/TRY': data['bitcoin']['try'].toDouble(),
+            'ETH/TRY': data['ethereum']['try'].toDouble(),
+            'USDT/TRY': data['tether']['try'].toDouble(),
+            'USDC/TRY': data['usd-coin']['try'].toDouble(),
+            'BNB/TRY': data['binancecoin']['try'].toDouble(),
+            'ADA/TRY': data['cardano']['try'].toDouble(),
+            'DOGE/TRY': data['dogecoin']['try'].toDouble(),
+            'SOL/TRY': data['solana']['try'].toDouble(),
+            'LTC/TRY': data['litecoin']['try'].toDouble(),
 
-            'BTC/TRY_2': data['bitcoin']['try'].toDouble(),
-            'ETH/TRY_2': data['ethereum']['try'].toDouble(),
-            'USDT/TRY_2': data['tether']['try'].toDouble(),
-            'USDC/TRY_2': data['usd-coin']['try'].toDouble(),
-            'BNB/TRY_2': data['binancecoin']['try'].toDouble(),
-            'ADA/TRY_2': data['cardano']['try'].toDouble(),
-            'DOGE/TRY_2': data['dogecoin']['try'].toDouble(),
-            'SOL/TRY_2': data['solana']['try'].toDouble(),
-            'LTC/TRY_2': data['litecoin']['try'].toDouble(),
-
-            'BTC/TRY_3': data['bitcoin']['try'].toDouble(),
-            'ETH/TRY_3': data['ethereum']['try'].toDouble(),
-            'USDT/TRY_3': data['tether']['try'].toDouble(),
-            'USDC/TRY_3': data['usd-coin']['try'].toDouble(),
-            'BNB/TRY_3': data['binancecoin']['try'].toDouble(),
-            'ADA/TRY_3': data['cardano']['try'].toDouble(),
-            'DOGE/TRY_3': data['dogecoin']['try'].toDouble(),
-            'SOL/TRY_3': data['solana']['try'].toDouble(),
-            'LTC/TRY_3': data['litecoin']['try'].toDouble(),
-
-            'BTC/TRY_4': data['bitcoin']['try'].toDouble(),
-            'ETH/TRY_4': data['ethereum']['try'].toDouble(),
-            'USDT/TRY_4': data['tether']['try'].toDouble(),
-            'USDC/TRY_4': data['usd-coin']['try'].toDouble(),
-            'BNB/TRY_4': data['binancecoin']['try'].toDouble(),
-            'ADA/TRY_4': data['cardano']['try'].toDouble(),
-            'DOGE/TRY_4': data['dogecoin']['try'].toDouble(),
-            'SOL/TRY_4': data['solana']['try'].toDouble(),
-            'LTC/TRY_4': data['litecoin']['try'].toDouble(),
           };
           isLoading = false;
         });
@@ -111,12 +106,12 @@ class MarketScreen extends StatefulWidget{
         children: [
           Expanded(
             child: ListView(
-              children: _prices.entries.map((entry) {
+              children: _getSortedPrices().map((entry) {
                 return _currencyPrice(
                   entry.key,
                   entry.value.toStringAsFixed(2),
                   "Live",
-                  null,
+                  true,
                 );
               }).toList(),
             ),
@@ -150,9 +145,22 @@ class MarketScreen extends StatefulWidget{
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            pair,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => _toggleFavorite(pair),
+                child: Icon(
+                  _favorites.contains(pair) ? Icons.star : Icons.star_border,
+                  color: _favorites.contains(pair) ? Colors.amber : Colors.grey,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                pair,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
