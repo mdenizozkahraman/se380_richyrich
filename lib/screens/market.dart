@@ -102,28 +102,28 @@ class MarketScreen extends StatefulWidget{
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-        children: [
-          Expanded(
-            child: ListView(
-              children: _getSortedPrices().map((entry) {
-                return _currencyPrice(
-                  entry.key,
-                  entry.value.toStringAsFixed(2),
-                  "Live",
-                  true,
-                );
-              }).toList(),
+          : RefreshIndicator(
+        onRefresh: loadPrices,
+        child: ListView(
+          children: [
+            ..._getSortedPrices().map((entry) {
+              return _currencyPrice(
+                entry.key,
+                entry.value.toStringAsFixed(2),
+                "Live",
+                true,
+              );
+            }).toList(),
+            const Padding(
+              padding: EdgeInsets.only(bottom: 16),
+              child: Text(
+                'Data provided by CoinGecko',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
             ),
-          ),
-          const Padding(
-            padding: EdgeInsets.only(bottom: 16),
-            child: Text(
-              'Data provided by CoinGecko',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
