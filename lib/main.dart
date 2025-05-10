@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:se380_richyrich/providers/settings_provider.dart';
 import 'screens/market.dart';
 import 'screens/wallet.dart';
 import 'screens/news.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => SettingsProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -12,15 +19,26 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'RichyRich',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: Colors.grey[900],
-      ),
-      home: const MainScreen(),
+    return Consumer<SettingsProvider>(
+      builder: (context, settings, child) {
+        return MaterialApp(
+          title: 'RichyRich',
+          theme: settings.isDarkMode
+              ? ThemeData(
+            primarySwatch: Colors.blue,
+            useMaterial3: true,
+            brightness: Brightness.dark,
+            scaffoldBackgroundColor: Colors.grey[900],
+          )
+              : ThemeData(
+            primarySwatch: Colors.blue,
+            useMaterial3: true,
+            brightness: Brightness.light,
+            scaffoldBackgroundColor: Colors.grey[100],
+          ),
+          home: const MainScreen(),
+        );
+      },
     );
   }
 }
@@ -39,11 +57,12 @@ class _MainScreenState extends State<MainScreen> {
     const NewsScreen(),
     const MarketScreen(),
     const WalletScreen(),
-
   ];
 
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
+
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
@@ -61,32 +80,32 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
         child: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-    },
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white70,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.newspaper),
-            label: 'News',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.trending_up),
-            label: 'Market',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet),
-            label: 'Wallet',
-          ),
-        ],
+          currentIndex: _selectedIndex,
+          onTap: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.white70,
+          items: [
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.newspaper),
+              label: settings.getText('news'),
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.trending_up),
+              label: settings.getText('market'),
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.account_balance_wallet),
+              label: settings.getText('wallet'),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 }

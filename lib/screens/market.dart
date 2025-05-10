@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:se380_richyrich/coingecko_service.dart';
+import 'package:se380_richyrich/screens/settings.dart';
 
 class MarketScreen extends StatefulWidget{
   const MarketScreen({super.key});
@@ -99,6 +100,17 @@ class MarketScreen extends StatefulWidget{
             ),
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())

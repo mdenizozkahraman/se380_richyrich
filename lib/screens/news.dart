@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:se380_richyrich/screens/settings.dart';
 
 class NewsItem{
   final String title;
@@ -107,11 +108,21 @@ class _NewsScreenState extends State<NewsScreen> {
               end: Alignment.bottomRight,
               colors: [
                 Colors.blue[900]!,
-                Colors.blue[800]!,
-              ],
+                Colors.blue[800]!,],
             ),
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: isLoading ? const Center(child: CircularProgressIndicator()) : RefreshIndicator(
         onRefresh: loadNews,
