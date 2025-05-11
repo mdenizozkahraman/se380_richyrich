@@ -5,7 +5,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import 'package:se380_richyrich/cryptocompare_service.dart';
 import 'package:se380_richyrich/providers/settings_provider.dart';
+import 'package:se380_richyrich/providers/transaction_provider.dart';
 import 'package:se380_richyrich/screens/settings.dart';
+
+import '../transaction.dart';
 
 class Asset {
   final String currency;
@@ -165,6 +168,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
   void _showAddAssetDialog(BuildContext context, String currency) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
     final TextEditingController amountController = TextEditingController();
     final TextEditingController priceController = TextEditingController();
 
@@ -200,9 +204,19 @@ class _WalletScreenState extends State<WalletScreen> {
                 onPressed: () {
                   if (amountController.text.isNotEmpty &&
                       priceController.text.isNotEmpty) {
+                    final newAmount = double.parse(amountController.text);
+                    final newPrice = double.parse(priceController.text);
+
+                    transactionProvider.addTransaction(
+                      Transaction(
+                        type: 'BUY',
+                        cryptocurrency: currency,
+                        amount: newAmount,
+                        price: newPrice,
+                        timestamp: DateTime.now(),
+                      ),
+                    );
                     setState(() {
-                      final newAmount = double.parse(amountController.text);
-                      final newPrice = double.parse(priceController.text);
                       final existingAssetIndex = _assets.indexWhere(
                         (asset) => asset.currency == currency,
                       );
@@ -314,6 +328,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
   void _showSellAssetDialog(BuildContext context, String currency) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
     final TextEditingController amountController = TextEditingController();
     final TextEditingController priceController = TextEditingController();
 
@@ -349,9 +364,20 @@ class _WalletScreenState extends State<WalletScreen> {
                 onPressed: () {
                   if (amountController.text.isNotEmpty &&
                       priceController.text.isNotEmpty) {
+
+                    final newAmount = double.parse(amountController.text);
+                    final newPrice = double.parse(priceController.text);
+
+                    transactionProvider.addTransaction(
+                      Transaction(
+                        type: 'SELL',
+                        cryptocurrency: currency,
+                        amount: newAmount,
+                        price: newPrice,
+                        timestamp: DateTime.now(),
+                      ),
+                    );
                     setState(() {
-                      final newAmount = double.parse(amountController.text);
-                      final newPrice = double.parse(priceController.text);
                       final existingAssetIndex = _assets.indexWhere(
                         (asset) => asset.currency == currency,
                       );

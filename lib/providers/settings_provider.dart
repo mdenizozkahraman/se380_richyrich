@@ -126,6 +126,8 @@ class SettingsProvider extends ChangeNotifier {
     'deleteAsset': 'Varlık Sil',
     'no': 'Hayır',
     'yes': 'Evet',
+    'history':'Geçmiş',
+    'noTransactions':'Henüz bir işlem kaydı bulunmuyor!',
   };
 
   static const Map<String, String> _englishTexts = {
@@ -194,5 +196,8 @@ class SettingsProvider extends ChangeNotifier {
     'deleteAsset': 'Delete Asset',
     'no': 'No',
     'yes': 'Yes',
+    'history':'History',
+    'noTransactions':'There is no transaction!',
+
   };
 }

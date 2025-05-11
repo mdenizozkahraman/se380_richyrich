@@ -7,7 +7,7 @@ class CryptoCompareService {
   // API anahtarı ve temel URL
   final String _apiKey = 'dcbdf7a85b0513c6687676cfeb095e3ae69762d828aa45d8566ccf604d245c7a';
   final String _baseUrl = 'https://min-api.cryptocompare.com/data';
-  
+
   // Önbellek için kullanılacak değişkenler
   static final Map<String, dynamic> _priceCache = {};
   static final Map<String, dynamic> _chartCache = {};
@@ -15,19 +15,19 @@ class CryptoCompareService {
   static DateTime _lastPriceRequestTime = DateTime.now().subtract(const Duration(minutes: 5));
   static DateTime _lastChartRequestTime = DateTime.now().subtract(const Duration(minutes: 5));
   static DateTime _lastNewsRequestTime = DateTime.now().subtract(const Duration(minutes: 30));
-  
+
   // Önbellek süresi (dakika cinsinden)
   static const int _priceCacheDurationMinutes = 5;
   static const int _chartCacheDurationMinutes = 30;
   static const int _newsCacheDurationMinutes = 30;
-  
+
   // Önbellek kontrolü
   Future<bool> _shouldRefreshCache(String cacheType) async {
     final prefs = await SharedPreferences.getInstance();
     final lastUpdateKey = 'last_${cacheType}_update';
     final lastUpdate = prefs.getInt(lastUpdateKey) ?? 0;
     final now = DateTime.now().millisecondsSinceEpoch;
-    
+
     int cacheDuration;
     switch (cacheType) {
       case 'price':
@@ -42,52 +42,51 @@ class CryptoCompareService {
       default:
         cacheDuration = 5 * 60 * 1000; // 5 dakika
     }
-    
+
     if (now - lastUpdate > cacheDuration) {
       await prefs.setInt(lastUpdateKey, now);
       return true;
     }
     return false;
   }
-  
-  // Fiyat verilerini çekme
+
+
   Future<Map<String, dynamic>> fetchPrices(List<String> coinIds, String vsCurrency) async {
     final cacheKey = '${coinIds.join(',')}-$vsCurrency';
-    
-    // Önbellekte varsa ve güncel ise, önbellekten döndür
-    if (_priceCache.containsKey(cacheKey) && 
+
+
+    if (_priceCache.containsKey(cacheKey) &&
         DateTime.now().difference(_lastPriceRequestTime).inMinutes < _priceCacheDurationMinutes) {
       print('Fiyatlar önbellekten alınıyor');
       return _priceCache[cacheKey];
     }
-    
-    // Önbelleği güncelleme zamanı gelmiş mi kontrol et
+
     final shouldRefresh = await _shouldRefreshCache('price');
     if (!shouldRefresh && _priceCache.containsKey(cacheKey)) {
       print('Fiyatlar önbellekten alınıyor (zaman kontrolü)');
       return _priceCache[cacheKey];
     }
-    
+
     try {
       final fsyms = coinIds.join(',');
       final url = Uri.parse('$_baseUrl/pricemulti?fsyms=$fsyms&tsyms=$vsCurrency&api_key=$_apiKey');
-      
+
       print('API isteği gönderiliyor: $url');
-      
+
       final response = await http.get(
         url,
         headers: {
           'accept': 'application/json',
         }
       );
-      
+
       print('API yanıtı: ${response.statusCode}');
       print('Yanıt gövdesi: ${response.body}');
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
-        // Yanıt yapısını kontrol et
+
+
         if (data is Map<String, dynamic>) {
           print('Veri yapısı doğru: Map<String, dynamic>');
           _priceCache[cacheKey] = data;
@@ -100,46 +99,46 @@ class CryptoCompareService {
       } else {
         print('API Hatası: ${response.statusCode}');
         print('Yanıt: ${response.body}');
-        
-        // Hata durumunda önbellekte veri varsa onu kullan
+
+
         if (_priceCache.containsKey(cacheKey)) {
           return _priceCache[cacheKey];
         }
-        
-        // Önbellekte veri yoksa mock veri döndür
+
+
         return _getMockPrices(coinIds, vsCurrency);
       }
     } catch (e) {
       print('Fiyat çekme hatası: $e');
-      
-      // Hata durumunda önbellekte veri varsa onu kullan
+
+
       if (_priceCache.containsKey(cacheKey)) {
         return _priceCache[cacheKey];
       }
-      
-      // Önbellekte veri yoksa mock veri döndür
+
+
       return _getMockPrices(coinIds, vsCurrency);
     }
   }
-  
-  // Grafik verilerini çekme
+
+
   Future<List<Map<String, dynamic>>> fetchMarketChart(String coinId, String vsCurrency, int days) async {
     final cacheKey = '$coinId-$vsCurrency-$days';
-    
-    // Önbellekte varsa ve güncel ise, önbellekten döndür
-    if (_chartCache.containsKey(cacheKey) && 
+
+
+    if (_chartCache.containsKey(cacheKey) &&
         DateTime.now().difference(_lastChartRequestTime).inMinutes < _chartCacheDurationMinutes) {
       print('Grafik verileri önbellekten alınıyor');
       return _chartCache[cacheKey];
     }
-    
-    // Önbelleği güncelleme zamanı gelmiş mi kontrol et
+
+
     final shouldRefresh = await _shouldRefreshCache('chart');
     if (!shouldRefresh && _chartCache.containsKey(cacheKey)) {
       print('Grafik verileri önbellekten alınıyor (zaman kontrolü)');
       return _chartCache[cacheKey];
     }
-    
+
     try {
       String endpoint;
       if (days <= 1) {
@@ -151,16 +150,16 @@ class CryptoCompareService {
       } else {
         endpoint = 'histoday';
       }
-      
+
       final url = Uri.parse('$_baseUrl/v2/$endpoint?fsym=$coinId&tsym=$vsCurrency&limit=$days&api_key=$_apiKey');
-      
+
       final response = await http.get(
         url,
         headers: {
           'accept': 'application/json',
         }
       );
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['Response'] == 'Success' && data['Data'] != null && data['Data']['Data'] != null) {
@@ -169,80 +168,80 @@ class CryptoCompareService {
             'timestamp': item['time'] * 1000.0, // Unix timestamp'i milisaniyeye çevir
             'price': item['close'].toDouble(),
           }).toList();
-          
+
           _chartCache[cacheKey] = result;
           _lastChartRequestTime = DateTime.now();
           return result;
         } else {
           print('API Yanıtı Hatası: ${data['Message'] ?? 'Bilinmeyen hata'}');
-          
+
           // Önbellekte veri varsa onu kullan
           if (_chartCache.containsKey(cacheKey)) {
             return _chartCache[cacheKey];
           }
-          
+
           // Önbellekte veri yoksa mock veri döndür
           return _getMockChartData(days);
         }
       } else {
         print('API Hatası: ${response.statusCode}');
         print('Yanıt: ${response.body}');
-        
+
         // Hata durumunda önbellekte veri varsa onu kullan
         if (_chartCache.containsKey(cacheKey)) {
           return _chartCache[cacheKey];
         }
-        
+
         // Önbellekte veri yoksa mock veri döndür
         return _getMockChartData(days);
       }
     } catch (e) {
       print('Grafik verisi çekme hatası: $e');
-      
+
       // Hata durumunda önbellekte veri varsa onu kullan
       if (_chartCache.containsKey(cacheKey)) {
         return _chartCache[cacheKey];
       }
-      
+
       // Önbellekte veri yoksa mock veri döndür
       return _getMockChartData(days);
     }
   }
-  
+
   // Haber verilerini çekme
   Future<List<Map<String, dynamic>>> fetchNews({String? categories, int limit = 10}) async {
     final cacheKey = 'news-${categories ?? 'all'}-$limit';
-    
+
     // Önbellekte varsa ve güncel ise, önbellekten döndür
-    if (_newsCache.containsKey(cacheKey) && 
+    if (_newsCache.containsKey(cacheKey) &&
         DateTime.now().difference(_lastNewsRequestTime).inMinutes < _newsCacheDurationMinutes) {
       print('Haberler önbellekten alınıyor');
       return _newsCache[cacheKey];
     }
-    
+
     // Önbelleği güncelleme zamanı gelmiş mi kontrol et
     final shouldRefresh = await _shouldRefreshCache('news');
     if (!shouldRefresh && _newsCache.containsKey(cacheKey)) {
       print('Haberler önbellekten alınıyor (zaman kontrolü)');
       return _newsCache[cacheKey];
     }
-    
+
     try {
       String urlStr = '$_baseUrl/v2/news/?lang=EN&sortOrder=popular&api_key=$_apiKey';
       if (categories != null && categories.isNotEmpty) {
         urlStr += '&categories=$categories';
       }
       urlStr += '&extraParams=RichyRich_App';
-      
+
       final url = Uri.parse(urlStr);
-      
+
       final response = await http.get(
         url,
         headers: {
           'accept': 'application/json',
         }
       );
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['Data'] != null) {
@@ -258,50 +257,50 @@ class CryptoCompareService {
             'tags': item['tags'],
             'categories': item['categories'],
           }).toList();
-          
+
           _newsCache[cacheKey] = result;
           _lastNewsRequestTime = DateTime.now();
           return result;
         } else {
           print('API Yanıtı Hatası: ${data['Message'] ?? 'Bilinmeyen hata'}');
-          
+
           // Önbellekte veri varsa onu kullan
           if (_newsCache.containsKey(cacheKey)) {
             return _newsCache[cacheKey];
           }
-          
+
           // Önbellekte veri yoksa mock veri döndür
           return _getMockNews(limit);
         }
       } else {
         print('API Hatası: ${response.statusCode}');
         print('Yanıt: ${response.body}');
-        
+
         // Hata durumunda önbellekte veri varsa onu kullan
         if (_newsCache.containsKey(cacheKey)) {
           return _newsCache[cacheKey];
         }
-        
+
         // Önbellekte veri yoksa mock veri döndür
         return _getMockNews(limit);
       }
     } catch (e) {
       print('Haber çekme hatası: $e');
-      
+
       // Hata durumunda önbellekte veri varsa onu kullan
       if (_newsCache.containsKey(cacheKey)) {
         return _newsCache[cacheKey];
       }
-      
+
       // Önbellekte veri yoksa mock veri döndür
       return _getMockNews(limit);
     }
   }
-  
+
   // Mock fiyat verisi
   Map<String, dynamic> _getMockPrices(List<String> coinIds, String vsCurrency) {
     final result = <String, dynamic>{};
-    
+
     for (final coinId in coinIds) {
       double basePrice;
       switch (coinId.toLowerCase()) {
@@ -344,25 +343,25 @@ class CryptoCompareService {
         default:
           basePrice = 100.0;
       }
-      
+
       result[coinId.toUpperCase()] = {
         vsCurrency.toLowerCase(): basePrice + Random().nextDouble() * (basePrice * 0.05),
       };
     }
-    
+
     return result;
   }
-  
+
   // Mock grafik verisi
   List<Map<String, dynamic>> _getMockChartData(int days) {
     final List<Map<String, dynamic>> result = [];
     final now = DateTime.now().millisecondsSinceEpoch;
     final dayInMs = 24 * 60 * 60 * 1000;
-    
+
     // Başlangıç fiyatı ve değişim aralığı belirleme
     double basePrice;
     double priceRange;
-    
+
     switch (days) {
       case 1:
         basePrice = 2000000.0;
@@ -388,35 +387,35 @@ class CryptoCompareService {
         basePrice = 2000000.0;
         priceRange = 50000.0;
     }
-    
+
     // Gerçekçi fiyat hareketi oluştur
     double lastPrice = basePrice;
-    
+
     for (int i = days; i >= 0; i--) {
       final timestamp = now - (i * dayInMs ~/ days);
       // Küçük rastgele değişimler
       final change = (Random().nextDouble() - 0.5) * (priceRange / days);
       lastPrice += change;
-      
+
       // Fiyat asla çok düşmesin
       if (lastPrice < basePrice - priceRange) {
         lastPrice = basePrice - priceRange + Random().nextDouble() * 10000;
       }
-      
+
       // Fiyat asla çok yükselmesin
       if (lastPrice > basePrice + priceRange) {
         lastPrice = basePrice + priceRange - Random().nextDouble() * 10000;
       }
-      
+
       result.add({
         'timestamp': timestamp.toDouble(),
         'price': lastPrice,
       });
     }
-    
+
     return result;
   }
-  
+
   // Mock haber verisi
   List<Map<String, dynamic>> _getMockNews(int limit) {
     final List<Map<String, dynamic>> mockNews = [

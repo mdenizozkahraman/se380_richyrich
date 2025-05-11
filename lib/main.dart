@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:se380_richyrich/providers/settings_provider.dart';
+import 'package:se380_richyrich/providers/transaction_provider.dart';
 import 'screens/market.dart';
 import 'screens/wallet.dart';
 import 'screens/news.dart';
@@ -7,8 +8,11 @@ import 'package:provider/provider.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => SettingsProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => TransactionProvider()),
+      ],
       child: const MyApp(),
     ),
   );

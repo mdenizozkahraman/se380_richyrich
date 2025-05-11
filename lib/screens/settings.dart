@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:se380_richyrich/providers/settings_provider.dart';
+import 'package:se380_richyrich/screens/history.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -99,6 +100,17 @@ class SettingsScreen extends StatelessWidget {
                         ],
                       ),
                     ),
+                  );
+                },
+              ),
+              const Divider(),
+              ListTile(
+                title: Text(settings.getText("history")),
+                leading: const Icon(Icons.history),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HistoryScreen()),
                   );
                 },
               ),
