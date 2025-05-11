@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
-import 'package:se380_richyrich/coingecko_service.dart';
+import 'package:se380_richyrich/cryptocompare_service.dart';
 import 'package:se380_richyrich/providers/settings_provider.dart';
 import 'package:se380_richyrich/screens/settings.dart';
 
@@ -35,49 +35,67 @@ class _WalletScreenState extends State<WalletScreen> {
   Timer? _priceUpdateTimer;
 
   Future<void> _updateRealPrices() async {
-    final service = CoinGeckoService();
+    final service = CryptoCompareService();
     try {
       final data = await service.fetchPrices([
-        'bitcoin',
-        'ethereum',
-        'tether',
-        'usd-coin',
-        'binancecoin',
-        'cardano',
-        'dogecoin',
-        'solana',
-        'litecoin',
-      ], 'try');
+        'BTC',
+        'ETH',
+        'USDT',
+        'USDC',
+        'BNB',
+        'ADA',
+        'DOGE',
+        'SOL',
+        'LTC',
+      ], 'TRY');
 
       setState(() {
         for (var asset in _assets) {
           switch (asset.currency) {
             case "BTC":
-              asset.realPrice = data['bitcoin']['try'].toDouble();
+              if (data['BTC'] != null && data['BTC']['TRY'] != null) {
+                asset.realPrice = data['BTC']['TRY'].toDouble();
+              }
               break;
             case "ETH":
-              asset.realPrice = data['ethereum']['try'].toDouble();
+              if (data['ETH'] != null && data['ETH']['TRY'] != null) {
+                asset.realPrice = data['ETH']['TRY'].toDouble();
+              }
               break;
             case "USDT":
-              asset.realPrice = data['tether']['try'].toDouble();
+              if (data['USDT'] != null && data['USDT']['TRY'] != null) {
+                asset.realPrice = data['USDT']['TRY'].toDouble();
+              }
               break;
             case "USDC":
-              asset.realPrice = data['usd-coin']['try'].toDouble();
+              if (data['USDC'] != null && data['USDC']['TRY'] != null) {
+                asset.realPrice = data['USDC']['TRY'].toDouble();
+              }
               break;
             case "BNB":
-              asset.realPrice = data['binancecoin']['try'].toDouble();
+              if (data['BNB'] != null && data['BNB']['TRY'] != null) {
+                asset.realPrice = data['BNB']['TRY'].toDouble();
+              }
               break;
             case "ADA":
-              asset.realPrice = data['cardano']['try'].toDouble();
+              if (data['ADA'] != null && data['ADA']['TRY'] != null) {
+                asset.realPrice = data['ADA']['TRY'].toDouble();
+              }
               break;
             case "DOGE":
-              asset.realPrice = data['dogecoin']['try'].toDouble();
+              if (data['DOGE'] != null && data['DOGE']['TRY'] != null) {
+                asset.realPrice = data['DOGE']['TRY'].toDouble();
+              }
               break;
             case "SOL":
-              asset.realPrice = data['solana']['try'].toDouble();
+              if (data['SOL'] != null && data['SOL']['TRY'] != null) {
+                asset.realPrice = data['SOL']['TRY'].toDouble();
+              }
               break;
             case "LTC":
-              asset.realPrice = data['litecoin']['try'].toDouble();
+              if (data['LTC'] != null && data['LTC']['TRY'] != null) {
+                asset.realPrice = data['LTC']['TRY'].toDouble();
+              }
               break;
           }
         }

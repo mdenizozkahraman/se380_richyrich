@@ -1,21 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:se380_richyrich/screens/settings.dart';
+import 'package:se380_richyrich/cryptocompare_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class NewsItem{
+class NewsItem {
+  final String id;
   final String title;
-  final String description;
+  final String body;
   final String source;
-  final String date;
+  final String url;
   final String imageUrl;
+  final DateTime publishedAt;
+  final String categories;
 
   NewsItem({
+    required this.id,
     required this.title,
-    required this.description,
+    required this.body,
     required this.source,
-    required this.date,
-    required this.imageUrl
-});
+    required this.url,
+    required this.imageUrl,
+    required this.publishedAt,
+    required this.categories,
+  });
 
+  // API yanıtından NewsItem oluşturma
+  factory NewsItem.fromApiResponse(Map<String, dynamic> data) {
+    return NewsItem(
+      id: data['id'] ?? '',
+      title: data['title'] ?? 'Başlık yok',
+      body: data['body'] ?? 'İçerik yok',
+      source: data['source'] ?? 'Kaynak belirtilmemiş',
+      url: data['url'] ?? '',
+      imageUrl: data['imageUrl'] ?? 'https://picsum.photos/800/400',
+      publishedAt: data['publishedAt'] != null 
+          ? DateTime.fromMillisecondsSinceEpoch(data['publishedAt'].toInt())
+          : DateTime.now(),
+      categories: data['categories'] ?? '',
+    );
+  }
+
+  // Yayınlanma tarihini formatla
+  String get formattedDate {
+    final now = DateTime.now();
+    final difference = now.difference(publishedAt);
+    
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} dakika önce';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} saat önce';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} gün önce';
+    } else {
+      return '${publishedAt.day}/${publishedAt.month}/${publishedAt.year}';
+    }
+  }
 }
 
 class NewsScreen extends StatefulWidget {
@@ -26,66 +65,61 @@ class NewsScreen extends StatefulWidget {
 }
 
 class _NewsScreenState extends State<NewsScreen> {
-  bool isLoading = false;
+  bool isLoading = true;
+  String? errorMessage;
+  List<NewsItem> newsItems = [];
+  
+  // CryptoCompare servisini kullan
+  final CryptoCompareService _service = CryptoCompareService();
+  
+  // Kategori filtresi
+  String? selectedCategory;
+  final List<String> categories = ['All', 'Bitcoin', 'Ethereum', 'Altcoin', 'Blockchain', 'Mining', 'Trading', 'Regulation'];
 
-  final List<NewsItem> newsItems = [
-    NewsItem(
-      title: "EUR/USD shows stability at 1.08",
-      description: "The Euro maintains its position against the Dollar at 1.08, as European markets show signs of recovery.",
-      source: "Financial Times",
-      date: "8 hours ago",
-      imageUrl: "https://fastly.picsum.photos/id/411/5000/2358.jpg?hmac=YjkATffpMa8rh663_FXDsGY0W-Y0hAPfqpjXZoP65hQ",
-    ),
-    NewsItem(
-      title: "EUR/USD shows stability at 1.08",
-      description: "The Euro maintains its position against the Dollar at 1.08, as European markets show signs of recovery.",
-      source: "Financial Times",
-      date: "8 hours ago",
-      imageUrl: "https://fastly.picsum.photos/id/400/5000/3333.jpg?hmac=XKAazck_prwhbeyjBv4hERt3PeQAn0aX52O92xOXdrM",
-    ),
-    NewsItem(
-      title: "EUR/USD shows stability at 1.08",
-      description: "The Euro maintains its position against the Dollar at 1.08, as European markets show signs of recovery.",
-      source: "Financial Times",
-      date: "8 hours ago",
-      imageUrl: "https://fastly.picsum.photos/id/391/2980/2151.jpg?hmac=Vm7g1uyLxiCTfcFr1aXyYGRwqi7LMjpXzkatkqekPGQ",
-    ),
-    NewsItem(
-      title: "EUR/USD shows stability at 1.08",
-      description: "The Euro maintains its position against the Dollar at 1.08, as European markets show signs of recovery.",
-      source: "Financial Times",
-      date: "8 hours ago",
-      imageUrl: "https://fastly.picsum.photos/id/384/5000/3333.jpg?hmac=2GOxaQgXQ8kSAxRCFBixRObEW77GSX6a874FK-ZsvOM",
-    ),
-    NewsItem(
-      title: "EUR/USD shows stability at 1.08",
-      description: "The Euro maintains its position against the Dollar at 1.08, as European markets show signs of recovery.",
-      source: "Financial Times",
-      date: "8 hours ago",
-      imageUrl: "https://fastly.picsum.photos/id/382/3264/2448.jpg?hmac=h54Mr6ckCa-SPz2TZeUF_uvV_Qc8OhXbTSGw3ZDdxCI",
-    ),
-    NewsItem(
-      title: "EUR/USD shows stability at 1.08",
-      description: "The Euro maintains its position against the Dollar at 1.08, as European markets show signs of recovery.",
-      source: "Financial Times",
-      date: "8 hours ago",
-      imageUrl: "https://fastly.picsum.photos/id/392/5000/3333.jpg?hmac=vCaGuB6rQAiaofdQHatQL4DHgkyR2l-Ms9GWAL63CBQ",
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    loadNews();
+  }
 
   Future<void> loadNews() async {
     setState(() {
       isLoading = true;
+      errorMessage = null;
     });
 
-    await Future.delayed(const Duration(seconds: 1));
-
-    setState(() {
-      isLoading = false;
-    });
+    try {
+      // CryptoCompare API'sinden haberleri çek
+      final data = await _service.fetchNews(
+        categories: selectedCategory != null && selectedCategory != 'All' ? selectedCategory : null,
+        limit: 20,
+      );
+      
+      final items = data.map((item) => NewsItem.fromApiResponse(item)).toList();
+      
+      setState(() {
+        newsItems = items;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading news: $e');
+      setState(() {
+        isLoading = false;
+        errorMessage = e.toString();
+      });
+    }
   }
 
-
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('URL açılamadı: $url')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -124,80 +158,185 @@ class _NewsScreenState extends State<NewsScreen> {
           ),
         ],
       ),
-      body: isLoading ? const Center(child: CircularProgressIndicator()) : RefreshIndicator(
-        onRefresh: loadNews,
-        child: ListView.builder(
-          itemCount: newsItems.length,
-          itemBuilder: (context, index) {
-            final news = newsItems[index];
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              color: Colors.grey[850],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRect(
-                    child: Image.network(
-                      news.imageUrl,
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
+      body: Column(
+        children: [
+          // Kategori filtreleme
+          Container(
+            height: 50,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: categories.map((category) {
+                final isSelected = selectedCategory == category || (selectedCategory == null && category == 'All');
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: FilterChip(
+                    label: Text(category),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      setState(() {
+                        selectedCategory = selected ? category : null;
+                      });
+                      loadNews();
+                    },
+                    backgroundColor: Colors.grey[800],
+                    selectedColor: Colors.blue,
+                    checkmarkColor: Colors.white,
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : Colors.grey[400],
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          news.title,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[400],
-                          ),
-                        ),
-                        const SizedBox(height: 8,),
-                        Text(
-                          news.description,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[400],
-                          ),
-                        ),
-                        const SizedBox(height: 16,),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              news.source,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[500],
+                );
+              }).toList(),
+            ),
+          ),
+          
+          // Haberler
+          Expanded(
+            child: isLoading 
+              ? const Center(child: CircularProgressIndicator()) 
+              : errorMessage != null
+                ? _buildErrorWidget()
+                : RefreshIndicator(
+                    onRefresh: loadNews,
+                    child: newsItems.isEmpty
+                      ? const Center(child: Text('Haber bulunamadı'))
+                      : ListView.builder(
+                          itemCount: newsItems.length,
+                          itemBuilder: (context, index) {
+                            final news = newsItems[index];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              color: Colors.grey[850],
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            ),
-                            Text("  "),
-                            Text(
-                              news.date,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[500],
+                              child: InkWell(
+                                onTap: () => _launchUrl(news.url),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                                      child: Image.network(
+                                        news.imageUrl,
+                                        height: 200,
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Container(
+                                            height: 200,
+                                            width: double.infinity,
+                                            color: Colors.grey[700],
+                                            child: const Icon(Icons.image_not_supported, size: 50, color: Colors.white54),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            news.title,
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.grey[200],
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            news.body.length > 150 
+                                              ? '${news.body.substring(0, 150)}...' 
+                                              : news.body,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[400],
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                news.source,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.grey[500],
+                                                ),
+                                              ),
+                                              Text(
+                                                news.formattedDate,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[500],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            );
+                          },
                         ),
-                      ],
-                    ),
                   ),
-
-                ],
-              ),
-            );
-          },
-        ),
+          ),
+          
+          // Kaynak bilgisi
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text(
+              'Data provided by CryptoCompare',
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.error_outline,
+            color: Colors.red,
+            size: 60,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Haberler yüklenemedi',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            errorMessage?.replaceAll('Exception: ', '') ?? 'Bilinmeyen hata',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: loadNews,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text('Tekrar Dene'),
+          ),
+        ],
       ),
     );
   }
