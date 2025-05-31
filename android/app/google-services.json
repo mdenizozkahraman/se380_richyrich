@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "35461838725",
+    "project_id": "se380-richyrich",
+    "storage_bucket": "se380-richyrich.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:35461838725:android:92a62bbeb1d4b7b04a76ec",
+        "android_client_info": {
+          "package_name": "com.example.se380_richyrich"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "35461838725-jr2n42kcg88f8sm9am4gjnblrv0fpu2g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtPM-1H7x3T9ZHmJ0cBEgoRjJX-7t00VA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "35461838725-jr2n42kcg88f8sm9am4gjnblrv0fpu2g.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "35461838725-06q5ac16iuqbbr3fqo3m5ajrfcih20vr.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.se380Richyrich"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

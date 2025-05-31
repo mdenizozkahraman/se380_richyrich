@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:se380_richyrich/providers/auth_provider.dart';
 import 'package:se380_richyrich/providers/settings_provider.dart';
 import 'package:se380_richyrich/screens/history.dart';
 
@@ -8,8 +9,8 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SettingsProvider>(
-      builder: (context, settings, child) {
+    return Consumer2<SettingsProvider, AuthProvider>(
+      builder: (context, settings, auth, child) {
         return Scaffold(
           appBar: AppBar(
             title: Text(
@@ -31,6 +32,70 @@ class SettingsScreen extends StatelessWidget {
           ),
           body: ListView(
             children: [
+              // Kullanıcı bilgileri bölümü
+              if (auth.user != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Colors.blue[50]!, Colors.blue[100]!],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 30,
+                        backgroundColor: Colors.blue[600],
+                        backgroundImage: auth.user?.photoURL != null
+                            ? NetworkImage(auth.user!.photoURL!)
+                            : null,
+                        child: auth.user?.photoURL == null
+                            ? Text(
+                                auth.user?.displayName?.isNotEmpty == true
+                                    ? auth.user!.displayName![0].toUpperCase()
+                                    : auth.user?.email?[0].toUpperCase() ?? 'U',
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              auth.user?.displayName ?? 'Kullanıcı',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              auth.user?.email ?? '',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(),
+              ],
+
               ListTile(
                 title: Text(settings.getText('language')),
                 subtitle: Text(settings.language),
@@ -129,7 +194,7 @@ class SettingsScreen extends StatelessWidget {
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: Text(settings.getText('close')),
+                          child: const Text('Kapat'),
                         ),
                       ],
                     ),
@@ -137,18 +202,71 @@ class SettingsScreen extends StatelessWidget {
                 },
               ),
               const Divider(),
-              // SwitchListTile(
-              //   title: Text(settings.getText('darkMode')),
-              //   secondary: const Icon(Icons.dark_mode),
-              //   value: settings.isDarkMode,
-              //   onChanged: (bool value) {
-              //     settings.toggleDarkMode();
-              //   },
-              // ),
+              // Çıkış yap butonu
+              if (auth.user != null) ...[
+                const SizedBox(height: 20),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showSignOutDialog(context, auth, settings),
+                    icon: const Icon(Icons.logout, color: Colors.white),
+                    label: const Text(
+                      'Çıkış Yap',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red[600],
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
             ],
           ),
         );
       },
+    );
+  }
+
+  void _showSignOutDialog(BuildContext context, AuthProvider auth, SettingsProvider settings) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Çıkış Yap'),
+        content: const Text('Hesabınızdan çıkış yapmak istediğinizden emin misiniz?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await auth.signOut();
+              if (context.mounted) {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/login',
+                  (route) => false,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[600],
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Çıkış Yap'),
+          ),
+        ],
+      ),
     );
   }
 }

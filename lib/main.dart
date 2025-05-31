@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'package:se380_richyrich/providers/auth_provider.dart';
 import 'package:se380_richyrich/providers/settings_provider.dart';
 import 'package:se380_richyrich/providers/transaction_provider.dart';
 import 'screens/market.dart';
 import 'screens/wallet.dart';
 import 'screens/news.dart';
+import 'screens/auth/login_screen.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
       ],
@@ -23,8 +32,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SettingsProvider>(
-      builder: (context, settings, child) {
+    return Consumer2<SettingsProvider, AuthProvider>(
+      builder: (context, settings, auth, child) {
         return MaterialApp(
           title: 'RichyRich',
           theme: settings.isDarkMode
@@ -40,7 +49,11 @@ class MyApp extends StatelessWidget {
             brightness: Brightness.light,
             scaffoldBackgroundColor: Colors.grey[100],
           ),
-          home: const MainScreen(),
+          home: auth.isLoggedIn ? const MainScreen() : const LoginScreen(),
+          routes: {
+            '/home': (context) => const MainScreen(),
+            '/login': (context) => const LoginScreen(),
+          },
         );
       },
     );
