@@ -5,9 +5,12 @@ import 'package:se380_richyrich/providers/auth_provider.dart';
 import 'package:se380_richyrich/providers/settings_provider.dart';
 import 'package:se380_richyrich/providers/transaction_provider.dart';
 import 'package:se380_richyrich/providers/portfolio_provider.dart';
+import 'package:se380_richyrich/providers/user_provider.dart';
+import 'package:se380_richyrich/providers/friends_provider.dart';
 import 'screens/market.dart';
 import 'screens/wallet.dart';
 import 'screens/news.dart';
+import 'screens/friends.dart';
 import 'screens/auth/login_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -23,6 +26,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => PortfolioProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => FriendsProvider()),
       ],
       child: const MyApp(),
     ),
@@ -76,6 +81,7 @@ class _MainScreenState extends State<MainScreen> {
     const NewsScreen(),
     const MarketScreen(),
     const WalletScreen(),
+    const FriendsScreen(),
   ];
 
   @override
@@ -109,6 +115,7 @@ class _MainScreenState extends State<MainScreen> {
           elevation: 0,
           selectedItemColor: Colors.white,
           unselectedItemColor: Colors.white70,
+          type: BottomNavigationBarType.fixed,
           items: [
             BottomNavigationBarItem(
               icon: const Icon(Icons.newspaper),
@@ -121,6 +128,10 @@ class _MainScreenState extends State<MainScreen> {
             BottomNavigationBarItem(
               icon: const Icon(Icons.account_balance_wallet),
               label: settings.getText('wallet'),
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.people),
+              label: 'Arkadaşlar',
             ),
           ],
         ),

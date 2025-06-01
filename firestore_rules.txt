@@ -1,0 +1,46 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Kullanıcı profilleri - herkes okuyabilir (friend key arama için), sadece sahibi yazabilir
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Arkadaşlık ilişkileri - sadece kendi arkadaşlık kayıtlarını yönetebilir
+    match /friends/{friendId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.userId ||
+        request.auth.uid == resource.data.friendId
+      );
+      allow write: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // Portfolio verileri
+    match /portfolios/{userId} {
+      // Sadece sahibi kendi portfolyosunu yazabilir
+      allow write: if request.auth != null && request.auth.uid == userId;
+      
+      // Portfolyoyu okuma - kendisi veya arkadaşlık durumu app'de kontrol edilir
+      // Güvenlik için tüm authenticated kullanıcılar portfolyoları okuyabilir
+      // Ama arkadaşlık kontrolü uygulama seviyesinde yapılır
+      allow read: if request.auth != null;
+      
+      match /assets/{assetId} {
+        // Asset'leri sadece sahibi yazabilir
+        allow write: if request.auth != null && 
+          request.auth.uid == userId;
+        
+        // Asset'leri okuma - authenticated kullanıcılar okuyabilir
+        // Arkadaşlık kontrolü uygulama seviyesinde yapılır
+        allow read: if request.auth != null;
+      }
+    }
+  }
+} 
