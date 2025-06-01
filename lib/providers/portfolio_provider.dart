@@ -22,7 +22,10 @@ class PortfolioProvider extends ChangeNotifier {
       if (user != null) {
         loadAssets();
       } else {
+        // Kullanıcı çıkış yaptığında state'i temizle
         _assets.clear();
+        _isLoading = false;
+        _errorMessage = null;
         notifyListeners();
       }
     });

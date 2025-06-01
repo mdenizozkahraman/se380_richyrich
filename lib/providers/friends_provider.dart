@@ -26,8 +26,11 @@ class FriendsProvider extends ChangeNotifier {
       if (user != null) {
         loadFriends();
       } else {
+        // Kullanıcı çıkış yaptığında state'i temizle
         _friends.clear();
         _friendsPortfolios.clear();
+        _isLoading = false;
+        _errorMessage = null;
         notifyListeners();
       }
     });
@@ -186,6 +189,98 @@ class FriendsProvider extends ChangeNotifier {
       final price = currentPrices[asset.currency] ?? 0.0;
       return sum + (asset.amount * price);
     });
+  }
+
+  // Arkadaşları portfolio değerine göre sırala
+  List<Friend> getRankedFriends(Map<String, double> currentPrices) {
+    if (_friends.isEmpty) return [];
+    
+    final rankedFriends = List<Friend>.from(_friends);
+    
+    rankedFriends.sort((a, b) {
+      final valueA = getFriendPortfolioValue(a.friendId, currentPrices);
+      final valueB = getFriendPortfolioValue(b.friendId, currentPrices);
+      return valueB.compareTo(valueA); // Büyükten küçüğe sırala
+    });
+    
+    return rankedFriends;
+  }
+
+  // Kullanıcı dahil tüm katılımcıları sırala
+  List<Map<String, dynamic>> getRankedAllParticipants(
+    Map<String, double> currentPrices, 
+    double userPortfolioValue, 
+    String userId, 
+    String userName, 
+    String userEmail
+  ) {
+    List<Map<String, dynamic>> allParticipants = [];
+    
+    // Arkadaşları ekle
+    for (final friend in _friends) {
+      final portfolioValue = getFriendPortfolioValue(friend.friendId, currentPrices);
+      allParticipants.add({
+        'id': friend.friendId,
+        'name': friend.friendDisplayName,
+        'email': friend.friendEmail,
+        'portfolioValue': portfolioValue,
+        'isCurrentUser': false,
+        'friend': friend,
+      });
+    }
+    
+    // Kullanıcıyı ekle
+    allParticipants.add({
+      'id': userId,
+      'name': userName,
+      'email': userEmail,
+      'portfolioValue': userPortfolioValue,
+      'isCurrentUser': true,
+      'friend': null,
+    });
+    
+    // Portfolio değerine göre sırala
+    allParticipants.sort((a, b) => b['portfolioValue'].compareTo(a['portfolioValue']));
+    
+    return allParticipants;
+  }
+
+  // Kullanıcının kendi ranking pozisyonunu bul
+  int getUserRankPosition(String userId, Map<String, double> currentPrices, double userPortfolioValue) {
+    final allFriendsValues = _friends.map((friend) => 
+      getFriendPortfolioValue(friend.friendId, currentPrices)
+    ).toList();
+    
+    allFriendsValues.add(userPortfolioValue);
+    allFriendsValues.sort((a, b) => b.compareTo(a)); // Büyükten küçüğe
+    
+    return allFriendsValues.indexOf(userPortfolioValue) + 1;
+  }
+
+  // Ranking istatistikleri al
+  Map<String, dynamic> getRankingStats(Map<String, double> currentPrices, double userPortfolioValue) {
+    if (_friends.isEmpty) {
+      return {
+        'userRank': 1,
+        'totalParticipants': 1,
+        'friendsAbove': 0,
+        'friendsBelow': 0,
+      };
+    }
+    
+    final allValues = _friends.map((friend) => 
+      getFriendPortfolioValue(friend.friendId, currentPrices)
+    ).toList();
+    
+    final friendsAbove = allValues.where((value) => value > userPortfolioValue).length;
+    final friendsBelow = allValues.where((value) => value < userPortfolioValue).length;
+    
+    return {
+      'userRank': friendsAbove + 1,
+      'totalParticipants': _friends.length + 1,
+      'friendsAbove': friendsAbove,
+      'friendsBelow': friendsBelow,
+    };
   }
 
   void clearError() {

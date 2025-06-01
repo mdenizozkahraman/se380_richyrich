@@ -23,7 +23,10 @@ class UserProvider extends ChangeNotifier {
       if (user != null) {
         await loadUserProfile();
       } else {
+        // Kullanıcı çıkış yaptığında state'i temizle
         _currentUser = null;
+        _isLoading = false;
+        _errorMessage = null;
         notifyListeners();
       }
     });

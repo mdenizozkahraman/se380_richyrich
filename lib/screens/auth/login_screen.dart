@@ -19,6 +19,16 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _rememberMe = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Login ekranı açıldığında hataları temizle
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      authProvider.clearError();
+    });
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -300,6 +310,10 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _signIn() async {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      // Önceki hataları temizle
+      authProvider.clearError();
+      
       final success = await authProvider.signInWithEmailPassword(
         _emailController.text.trim(),
         _passwordController.text,
@@ -313,6 +327,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _signInWithGoogle() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    // Önceki hataları temizle
+    authProvider.clearError();
+    
     final success = await authProvider.signInWithGoogle();
 
     if (success && mounted) {

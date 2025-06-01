@@ -174,10 +174,19 @@ class AuthProvider extends ChangeNotifier {
   // Çıkış
   Future<void> signOut() async {
     try {
+      _setLoading(true);
+      _setError(null);
+      
       await _googleSignIn.signOut();
       await _auth.signOut();
+      
+      _user = null;
+      _setLoading(false);
+      notifyListeners();
     } catch (e) {
+      _setLoading(false);
       _setError('Çıkış yaparken hata oluştu');
+      print('Sign out error: $e');
     }
   }
 
