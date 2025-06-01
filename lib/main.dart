@@ -4,6 +4,7 @@ import 'firebase_options.dart';
 import 'package:se380_richyrich/providers/auth_provider.dart';
 import 'package:se380_richyrich/providers/settings_provider.dart';
 import 'package:se380_richyrich/providers/transaction_provider.dart';
+import 'package:se380_richyrich/providers/portfolio_provider.dart';
 import 'screens/market.dart';
 import 'screens/wallet.dart';
 import 'screens/news.dart';
@@ -21,6 +22,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
+        ChangeNotifierProvider(create: (_) => PortfolioProvider()),
       ],
       child: const MyApp(),
     ),
